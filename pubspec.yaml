@@ -64,6 +64,9 @@ dev_dependencies:
   # アプリアイコンを元画像1枚から各サイズ自動生成するためのツール
   flutter_launcher_icons: ^0.14.4
 
+  # 起動スプラッシュ（ネイティブのlaunch screen）をブランド化するツール
+  flutter_native_splash: ^2.4.4
+
 # アプリアイコン生成設定。
 # assets/icon/icon.png（1024x1024 の正方形PNG推奨）を置いてから
 # 次のコマンドで生成します:
@@ -74,6 +77,26 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/icon/icon.png"
+
+# 起動スプラッシュ画面の設定。
+# 背景色はアイコンの青グラデ中間色 #3082CF（タップしたアイコン→起動画面の見た目を連続させる）。
+# 中央に角丸ロゴ(splash_logo.png)を配置。生成コマンド:
+#   flutter pub get
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#3082CF"
+  image: assets/icon/splash_logo.png
+  # ダークモードでも同じブランド背景にする（白フラッシュを避ける）
+  color_dark: "#3082CF"
+  image_dark: assets/icon/splash_logo.png
+  android_12:
+    color: "#3082CF"
+    image: assets/icon/splash_logo.png
+    color_dark: "#3082CF"
+    image_dark: assets/icon/splash_logo.png
+  android: true
+  ios: true
+  web: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
