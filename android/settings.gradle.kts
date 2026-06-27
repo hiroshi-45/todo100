@@ -19,8 +19,11 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "9.0.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+    // AGP 9 は「Built-in Kotlin」を要求し、自前でKGPを適用する share_plus 等の
+    // プラグインがビルドできない。Flutter 3.44 が非推奨警告を出さない下限であり、
+    // かつ AGP 8 系（KGPプラグインが従来どおりビルド可能）に固定する。
+    id("com.android.application") version "8.11.1" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
 include(":app")
