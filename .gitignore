@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android リリース署名の秘密情報（絶対にコミットしない）
+/android/key.properties
+**/*.jks
+**/*.keystore

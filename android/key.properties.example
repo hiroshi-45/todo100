@@ -1,0 +1,15 @@
+# Android リリース署名の設定テンプレート。
+# このファイルをコピーして android/key.properties を作成し、実際の値を入れること。
+#   cp android/key.properties.example android/key.properties
+# ※ key.properties と *.jks は .gitignore 済み（コミットしない）。
+#
+# キーストアの生成（パスワードは自分で決めて安全に保管。紛失するとアプリ更新不可）:
+#   keytool -genkey -v -keystore ~/yumetsumi-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# storeFile はキーストアの絶対パス（例: /Users/maruno/yumetsumi-upload.jks）
+
+storePassword=【キーストアのパスワード】
+keyPassword=【鍵のパスワード】
+keyAlias=upload
+storeFile=【キーストア.jksの絶対パス】
