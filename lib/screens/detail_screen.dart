@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../main.dart';
+import '../models/bucket_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/celebration.dart';
 import 'edit_screen.dart';
+import 'share_preview_screen.dart';
+import 'upgrade_screen.dart';
 
 class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.itemId});
@@ -19,6 +22,25 @@ class DetailScreen extends StatelessWidget {
       await showCelebration(context,
           completedCount: bucketRepository.completedCount);
     }
+  }
+
+  /// 達成カードのシェア画像を書き出す（プレミアム限定）。
+  /// 非会員はプレミアム案内へ誘導する。
+  Future<void> _share(BuildContext context, BucketItem item) async {
+    if (!premiumRepository.isPremium) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const UpgradeScreen()),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SharePreviewScreen(
+          item: item,
+          achievedCount: bucketRepository.completedCount,
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
@@ -61,6 +83,12 @@ class DetailScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             actions: [
+              if (item.completed)
+                IconButton(
+                  icon: const Icon(Icons.ios_share),
+                  tooltip: 'シェア画像を作る',
+                  onPressed: () => _share(context, item),
+                ),
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => Navigator.of(context).push(
