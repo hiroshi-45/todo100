@@ -139,18 +139,13 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
               ),
               _Benefit(
                 emoji: '🖼️',
-                title: '達成写真のギャラリー＆シェア画像書き出し',
-                subtitle: '叶えた思い出を、まとめて振り返り・共有。',
+                title: 'シェア画像の書き出し',
+                subtitle: '叶えた瞬間を、SNS映えするカードにして共有。',
               ),
               _Benefit(
                 emoji: '🎨',
-                title: 'テーマ・カテゴリの追加',
-                subtitle: '自分らしく、見た目もカスタマイズ。',
-              ),
-              _Benefit(
-                emoji: '🚫',
-                title: '広告なしで、すっきり',
-                subtitle: '集中して、夢に向き合える。',
+                title: 'テーマの着せ替え',
+                subtitle: '5種類の配色から、自分らしい見た目に。',
                 last: true,
               ),
             ],
