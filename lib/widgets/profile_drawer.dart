@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -366,6 +367,23 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     );
   }
 
+  /// デバッグ専用：プレミアムをテスト解放/解除する。
+  Future<void> _debugTogglePremium(BuildContext context) async {
+    final next = !premiumRepository.isPremium;
+    await premiumRepository.debugSetPremium(next);
+    // 解除時に限定テーマが残らないようデフォルトへ戻す。
+    if (!next && themeRepository.current.premium) {
+      await themeRepository.select(AppPalettes.classic);
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(next ? '【テスト】プレミアム解放' : '【テスト】プレミアム解除'),
+        ),
+      );
+    }
+  }
+
   /// プレミアムへの導線（購入済みなら状態表示）。
   Widget _premiumTile(BuildContext context, int total) {
     final isPremium = premiumRepository.isPremium;
@@ -377,6 +395,8 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
+          // デバッグビルド限定：長押しでプレミアムを解放/解除（実機検証用）。
+          onLongPress: kDebugMode ? () => _debugTogglePremium(context) : null,
           onTap: isPremium
               ? null
               : () {

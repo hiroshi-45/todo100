@@ -148,6 +148,15 @@ class PremiumRepository extends ChangeNotifier {
     await _storage.savePremium(true);
   }
 
+  /// デバッグ専用：テスト用にプレミアム状態を切り替える。
+  /// 実機でプレミアム機能を確認するための裏口で、リリースビルドの
+  /// 動線からは呼ばれない（呼び出し側を [kDebugMode] でガードすること）。
+  Future<void> debugSetPremium(bool value) async {
+    _isPremium = value;
+    await _storage.savePremium(value);
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
