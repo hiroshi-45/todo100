@@ -73,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const ProfileDrawer(),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([bucketRepository, profileRepository]),
+          listenable: Listenable.merge(
+              [bucketRepository, profileRepository, themeRepository]),
           builder: (context, _) {
             final all = bucketRepository.items;
             final visible = _visible(all);

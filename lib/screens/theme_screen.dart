@@ -14,6 +14,8 @@ class ThemeScreen extends StatelessWidget {
   Future<void> _onTap(BuildContext context, AppPalette palette) async {
     if (themeRepository.canUse(palette)) {
       await themeRepository.select(palette);
+      // 選択したら前の画面に戻り、適用後の見た目を見せる。
+      if (context.mounted) Navigator.of(context).pop();
       return;
     }
     // プレミアム限定テーマを非会員がタップ → 課金案内へ。

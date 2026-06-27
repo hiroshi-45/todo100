@@ -29,7 +29,7 @@ class GalleryScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: bucketRepository,
+          listenable: Listenable.merge([bucketRepository, themeRepository]),
           builder: (context, _) {
             final sections = buildTimeline(bucketRepository.items);
             final completed =

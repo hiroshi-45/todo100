@@ -72,7 +72,7 @@ class DetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: bucketRepository,
+      listenable: Listenable.merge([bucketRepository, themeRepository]),
       builder: (context, _) {
         final item = bucketRepository.byId(itemId);
         if (item == null) {
