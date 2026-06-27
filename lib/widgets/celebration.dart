@@ -156,7 +156,7 @@ class _ToastCardState extends State<_ToastCard>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

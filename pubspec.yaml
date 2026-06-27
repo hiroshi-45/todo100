@@ -41,6 +41,14 @@ dependencies:
   confetti: ^0.8.0
   in_app_purchase: ^3.3.0
   share_plus: ^13.2.0
+  # バックアップ（書き出し/読み込み）の zip 生成・展開に使用（純Dart）
+  archive: ^4.0.2
+  # バックアップzipを読み込む際にファイルを選ぶ（公式パッケージ。
+  # win32(Dart) に依存しないため share_plus 13 と競合しない）
+  file_selector: ^1.0.3
+  # 達成リマインダー（ローカル通知）
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

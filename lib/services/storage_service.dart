@@ -3,24 +3,29 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../models/app_settings.dart';
 import '../models/bucket_item.dart';
 import '../models/profile.dart';
 
 /// やりたいことリストをローカルのJSONファイルに保存・読み込みする
 class StorageService {
-  static const _fileName = 'bucket_list.json';
-  static const _profileFileName = 'profile.json';
+  static const fileName = 'bucket_list.json';
+  static const profileFileName = 'profile.json';
   static const _premiumFileName = 'premium.json';
   static const _themeFileName = 'theme.json';
+  static const _settingsFileName = 'settings.json';
+
+  /// アプリ専用ドキュメントディレクトリ（バックアップで参照する）。
+  Future<Directory> documentsDir() => getApplicationDocumentsDirectory();
 
   Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
+    return File('${dir.path}/$fileName');
   }
 
   Future<File> _profileFile() async {
     final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_profileFileName');
+    return File('${dir.path}/$profileFileName');
   }
 
   Future<File> _premiumFile() async {
@@ -119,5 +124,28 @@ class StorageService {
   Future<void> saveThemeId(String id) async {
     final file = await _themeFile();
     await file.writeAsString(jsonEncode({'themeId': id}));
+  }
+
+  Future<File> _settingsFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/$_settingsFileName');
+  }
+
+  Future<AppSettings> loadSettings() async {
+    try {
+      final file = await _settingsFile();
+      if (!await file.exists()) return AppSettings();
+      final content = await file.readAsString();
+      if (content.trim().isEmpty) return AppSettings();
+      return AppSettings.fromJson(
+          jsonDecode(content) as Map<String, dynamic>);
+    } catch (_) {
+      return AppSettings();
+    }
+  }
+
+  Future<void> saveSettings(AppSettings settings) async {
+    final file = await _settingsFile();
+    await file.writeAsString(jsonEncode(settings.toJson()));
   }
 }

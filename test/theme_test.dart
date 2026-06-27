@@ -24,10 +24,17 @@ void main() {
       }
     });
 
-    test('デフォルト以外はすべてプレミアム限定として定義されている', () {
-      expect(AppPalettes.classic.premium, isFalse);
-      final others = AppPalettes.all.where((p) => p.id != AppPalettes.classic.id);
-      expect(others.every((p) => p.premium), isTrue);
+    test('無料テーマはクラシックとダークの2種、それ以外はプレミアム限定', () {
+      const freeIds = {'classic', 'midnight'};
+      for (final p in AppPalettes.all) {
+        expect(p.premium, freeIds.contains(p.id) ? isFalse : isTrue,
+            reason: '${p.name} の premium 設定が想定と異なる');
+      }
+    });
+
+    test('ダークテーマは無料で誰でも使える', () {
+      expect(repo.canUse(AppPalettes.midnight), isTrue);
+      expect(AppPalettes.midnight.dark, isTrue);
     });
 
     test('パレットIDは一意', () {

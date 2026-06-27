@@ -44,11 +44,16 @@ class BucketRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 未達成を上に、達成済みを下に。同グループ内は作成順。
+  /// 並び順：未達成を上・達成済みを下。未達成の中ではピン留めを先頭に。
+  /// 同グループ内は作成順。
   void _sort() {
     _items.sort((a, b) {
       if (a.completed != b.completed) {
         return a.completed ? 1 : -1;
+      }
+      // 未達成どうしはピン留めを優先（達成済みのピンは無視）。
+      if (!a.completed && a.pinned != b.pinned) {
+        return a.pinned ? -1 : 1;
       }
       return a.createdAt.compareTo(b.createdAt);
     });
@@ -91,20 +96,66 @@ class BucketRepository extends ChangeNotifier {
     return becameComplete;
   }
 
-  Future<void> delete(String id) async {
+  /// 達成日を手動で設定する（達成済みの項目のみ有効）。
+  /// 「実は去年やった」のような後追い記録を可能にする。
+  Future<void> setCompletedDate(String id, DateTime date) async {
+    final item = byId(id);
+    if (item == null || !item.completed) return;
+    item.completedDate = date;
+    _sort();
+    notifyListeners();
+    await _persist();
+  }
+
+  /// 「次に叶えたい」ピン留めを切り替える。
+  Future<void> togglePinned(String id) async {
     final item = byId(id);
     if (item == null) return;
-    // 添付写真も削除
-    final path = item.photoPath;
-    if (path != null) {
-      final file = File(path);
-      if (await file.exists()) {
-        try {
-          await file.delete();
-        } catch (_) {}
-      }
-    }
+    item.pinned = !item.pinned;
+    _sort();
+    notifyListeners();
+    await _persist();
+  }
+
+  /// 項目を削除する。**添付写真はすぐには消さない**（取り消しのため）。
+  /// 取り消されなかった場合は呼び出し側で [purgePhoto] を呼ぶこと。
+  /// 削除した項目を返す（取り消し時に [restore] へ渡す）。
+  Future<BucketItem?> delete(String id) async {
+    final item = byId(id);
+    if (item == null) return null;
     _items.removeWhere((e) => e.id == id);
+    notifyListeners();
+    await _persist();
+    return item;
+  }
+
+  /// [delete] を取り消し、項目を元に戻す。
+  Future<void> restore(BucketItem item) async {
+    if (byId(item.id) != null) return;
+    _items.add(item);
+    _sort();
+    notifyListeners();
+    await _persist();
+  }
+
+  /// 取り消されなかった削除の添付写真を実際に消す（孤立ファイル防止）。
+  Future<void> purgePhoto(BucketItem item) async {
+    final path = item.photoPath;
+    if (path == null) return;
+    final file = File(path);
+    if (await file.exists()) {
+      try {
+        await file.delete();
+      } catch (_) {}
+    }
+  }
+
+  /// バックアップ復元用に、全項目を丸ごと置き換える。
+  Future<void> replaceAll(List<BucketItem> items) async {
+    _items
+      ..clear()
+      ..addAll(items);
+    _sort();
     notifyListeners();
     await _persist();
   }

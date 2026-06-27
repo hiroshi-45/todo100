@@ -126,9 +126,9 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.card,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFEEE2D8)),
+            border: Border.all(color: AppTheme.border),
           ),
           child: const Column(
             children: [
@@ -138,14 +138,14 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 subtitle: '無料プランは$kFreeItemLimit個まで。続きはプレミアムで。',
               ),
               _Benefit(
-                emoji: '🖼️',
-                title: 'シェア画像の書き出し',
-                subtitle: '叶えた瞬間を、SNS映えするカードにして共有。',
+                emoji: '🎨',
+                title: '限定テーマの着せ替え',
+                subtitle: 'サクラ・オーシャンなど5種の配色から、自分らしい見た目に。',
               ),
               _Benefit(
-                emoji: '🎨',
-                title: 'テーマの着せ替え',
-                subtitle: '5種類の配色から、自分らしい見た目に。',
+                emoji: '💛',
+                title: '開発の応援＆今後の新機能',
+                subtitle: '一度の購入で、これからの追加機能もぜんぶ使えます。',
                 last: true,
               ),
             ],

@@ -43,6 +43,9 @@ class BucketItem {
   String? photoPath;
   final DateTime createdAt;
 
+  /// 「次に叶えたい」ピン留め。未達成リストの先頭に浮かせる優先フラグ。
+  bool pinned;
+
   BucketItem({
     required this.id,
     required this.title,
@@ -52,6 +55,7 @@ class BucketItem {
     this.completedDate,
     this.photoPath,
     required this.createdAt,
+    this.pinned = false,
   });
 
   BucketCategory get category => BucketCategory.byId(categoryId);
@@ -65,6 +69,7 @@ class BucketItem {
         'completedDate': completedDate?.toIso8601String(),
         'photoPath': photoPath,
         'createdAt': createdAt.toIso8601String(),
+        'pinned': pinned,
       };
 
   factory BucketItem.fromJson(Map<String, dynamic> json) => BucketItem(
@@ -79,5 +84,6 @@ class BucketItem {
         photoPath: json['photoPath'] as String?,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.now(),
+        pinned: json['pinned'] as bool? ?? false,
       );
 }

@@ -29,6 +29,13 @@ class ProfileRepository extends ChangeNotifier {
     await _storage.saveProfile(_profile);
   }
 
+  /// バックアップ復元用に、プロフィールを丸ごと置き換える。
+  Future<void> replaceProfile(Profile profile) async {
+    _profile = profile;
+    notifyListeners();
+    await _storage.saveProfile(_profile);
+  }
+
   /// 顔写真を設定する。古い写真は削除する。
   /// [path] が null の場合は写真を削除する。
   Future<void> updateAvatar(String? path) async {

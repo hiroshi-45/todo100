@@ -224,12 +224,12 @@ class _EditScreenState extends State<EditScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: _categoryId == c.id ? c.color : Colors.white,
+                          color: _categoryId == c.id ? c.color : AppTheme.card,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: _categoryId == c.id
                                 ? c.color
-                                : const Color(0xFFEEE2D8),
+                                : AppTheme.border,
                           ),
                         ),
                         child: Text(
@@ -262,9 +262,9 @@ class _EditScreenState extends State<EditScreen> {
                 child: Container(
                   height: 180,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.card,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFEEE2D8)),
+                    border: Border.all(color: AppTheme.border),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _photoPath != null && File(_photoPath!).existsSync()
@@ -421,9 +421,9 @@ class _ExampleSuggestions extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.card,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFEEE2D8)),
+                      border: Border.all(color: AppTheme.border),
                     ),
                     child: Text(
                       example,

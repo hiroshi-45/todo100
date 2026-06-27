@@ -79,10 +79,10 @@ class _ThemeCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? palette.primary : const Color(0xFFEEE2D8),
+            color: selected ? palette.primary : AppTheme.border,
             width: selected ? 2.5 : 1,
           ),
         ),

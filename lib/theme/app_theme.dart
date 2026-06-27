@@ -9,6 +9,9 @@ class AppPalette {
   /// プレミアム限定テーマか（無料はデフォルトのみ）。
   final bool premium;
 
+  /// 暗色テーマか（地の明暗で Material の Brightness を切り替える）。
+  final bool dark;
+
   final Color primary; // 主役のブランドカラー
   final Color secondary; // 進捗バーなどの差し色
   final Color accent; // 補助の差し色
@@ -16,17 +19,34 @@ class AppPalette {
   final Color bg; // 背景
   final Color ink; // 文字
 
+  /// カード・入力欄などの面の色（明色テーマでは白）。
+  final Color card;
+
+  /// 枠線の色。
+  final Color border;
+
+  /// うっすらした塗り（セグメントバーの地など）。
+  final Color subtle;
+
+  /// プレミアム強調タイルの淡い地色。
+  final Color premiumTint;
+
   const AppPalette({
     required this.id,
     required this.name,
     required this.emoji,
     required this.premium,
+    this.dark = false,
     required this.primary,
     required this.secondary,
     required this.accent,
     required this.orange,
     required this.bg,
     required this.ink,
+    this.card = Colors.white,
+    this.border = const Color(0xFFEEE2D8),
+    this.subtle = const Color(0xFFF1E7DD),
+    this.premiumTint = const Color(0xFFFFF4E6),
   });
 }
 
@@ -112,8 +132,28 @@ class AppPalettes {
     ink: Color(0xFF1A2233),
   );
 
+  /// 無料で使えるダークテーマ。夜の振り返りや省電力に。
+  static const AppPalette midnight = AppPalette(
+    id: 'midnight',
+    name: 'ダーク',
+    emoji: '🌙',
+    premium: false,
+    dark: true,
+    primary: Color(0xFFFF6F61),
+    secondary: Color(0xFFFFB74D),
+    accent: Color(0xFF4FC3F7),
+    orange: Color(0xFFFF8A65),
+    bg: Color(0xFF14161C),
+    ink: Color(0xFFECEFF4),
+    card: Color(0xFF1E2129),
+    border: Color(0xFF2C313C),
+    subtle: Color(0xFF252A33),
+    premiumTint: Color(0xFF2A2620),
+  );
+
   static const List<AppPalette> all = [
     classic,
+    midnight,
     sakura,
     ocean,
     forest,
@@ -143,15 +183,29 @@ class AppTheme {
   static Color get bg => palette.bg;
   static Color get ink => palette.ink;
 
-  static ThemeData light() {
+  /// カード・入力欄などの面の色。
+  static Color get card => palette.card;
+
+  /// 枠線の色。
+  static Color get border => palette.border;
+
+  /// うっすらした塗り。
+  static Color get subtle => palette.subtle;
+
+  /// プレミアム強調タイルの淡い地色。
+  static Color get premiumTint => palette.premiumTint;
+
+  /// 現在のパレットに応じたテーマ。ダークパレットでは Brightness.dark に。
+  static ThemeData theme() {
+    final brightness = palette.dark ? Brightness.dark : Brightness.light;
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
         primary: primary,
         secondary: secondary,
-        surface: Colors.white,
-        brightness: Brightness.light,
+        surface: card,
+        brightness: brightness,
       ),
       scaffoldBackgroundColor: bg,
       fontFamily: 'Hiragino Sans',
@@ -171,7 +225,7 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
+        color: card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -189,7 +243,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: card,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -198,7 +252,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFEEE2D8)),
+          borderSide: BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

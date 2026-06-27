@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../main.dart';
 import '../models/bucket_item.dart';
 import '../theme/app_theme.dart';
 import '../utils/stats.dart';
+import '../utils/wish_examples.dart';
 import '../widgets/celebration.dart';
 import '../widgets/profile_drawer.dart';
 import 'detail_screen.dart';
@@ -26,10 +28,17 @@ enum _StatusFilter { all, active, done }
 class _HomeScreenState extends State<HomeScreen> {
   String? _filterCategoryId; // null = すべて
   _StatusFilter _statusFilter = _StatusFilter.all;
+  String _query = ''; // 検索キーワード（タイトル・メモを対象）
 
   List<BucketItem> _visible(List<BucketItem> all) {
+    final q = _query.trim().toLowerCase();
     return all.where((item) {
       if (_filterCategoryId != null && item.categoryId != _filterCategoryId) {
+        return false;
+      }
+      if (q.isNotEmpty &&
+          !item.title.toLowerCase().contains(q) &&
+          !item.memo.toLowerCase().contains(q)) {
         return false;
       }
       switch (_statusFilter) {
@@ -52,6 +61,50 @@ class _HomeScreenState extends State<HomeScreen> {
       await showCelebration(context,
           completedCount: bucketRepository.completedCount);
     }
+  }
+
+  /// 空状態の候補チップから、ワンタップで1件追加する。
+  /// 無料上限に達している場合はプレミアム案内へ。
+  Future<void> _quickAdd(String title) async {
+    if (!premiumRepository.canAdd(bucketRepository.total)) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const UpgradeScreen()),
+      );
+      return;
+    }
+    await bucketRepository.add(
+      BucketItem(
+        id: const Uuid().v4(),
+        title: title,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// スワイプ削除：取り消し（Undo）つき。
+  void _deleteWithUndo(BucketItem item) {
+    final messenger = ScaffoldMessenger.of(context);
+    bucketRepository.delete(item.id).then((removed) {
+      if (removed == null) return;
+      var undone = false;
+      messenger
+          .showSnackBar(
+            SnackBar(
+              content: Text('「${removed.title}」を削除しました'),
+              action: SnackBarAction(
+                label: '元に戻す',
+                onPressed: () {
+                  undone = true;
+                  bucketRepository.restore(removed);
+                },
+              ),
+            ),
+          )
+          .closed
+          .then((_) {
+        if (!undone) bucketRepository.purgePhoto(removed);
+      });
+    });
   }
 
   Future<void> _openEdit({BucketItem? item}) async {
@@ -78,14 +131,40 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, _) {
             final all = bucketRepository.items;
             final visible = _visible(all);
+            final remainingFree =
+                premiumRepository.remainingFreeSlots(all.length);
+            final showUpgradeHint = !premiumRepository.isPremium &&
+                all.isNotEmpty &&
+                remainingFree <= 3;
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _Header()),
                 SliverToBoxAdapter(child: _filters(all)),
+                if (all.length >= 6)
+                  SliverToBoxAdapter(
+                    child: _SearchField(
+                      value: _query,
+                      onChanged: (v) => setState(() => _query = v),
+                    ),
+                  ),
+                if (showUpgradeHint)
+                  SliverToBoxAdapter(
+                    child: _UpgradeHint(
+                      remaining: remainingFree,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const UpgradeScreen()),
+                      ),
+                    ),
+                  ),
                 if (visible.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _EmptyState(hasAny: all.isNotEmpty),
+                    child: _EmptyState(
+                      hasAny: all.isNotEmpty,
+                      searching: _query.trim().isNotEmpty,
+                      onPickExample: _quickAdd,
+                    ),
                   )
                 else
                   SliverPadding(
@@ -94,14 +173,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: visible.length,
                       itemBuilder: (context, i) {
                         final item = visible[i];
-                        return _ItemCard(
-                          item: item,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DetailScreen(itemId: item.id),
+                        return Dismissible(
+                          key: ValueKey(item.id),
+                          direction: DismissDirection.endToStart,
+                          background: const _DeleteBackground(),
+                          onDismissed: (_) => _deleteWithUndo(item),
+                          child: _ItemCard(
+                            item: item,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => DetailScreen(itemId: item.id),
+                              ),
                             ),
+                            onToggle: () => _toggle(item),
                           ),
-                          onToggle: () => _toggle(item),
                         );
                       },
                     ),
@@ -183,7 +268,7 @@ class _StatusFilterBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1E7DD),
+        color: AppTheme.subtle,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -206,7 +291,7 @@ class _StatusFilterBar extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
+            color: selected ? AppTheme.card : Colors.transparent,
             borderRadius: BorderRadius.circular(13),
             boxShadow: selected
                 ? [
@@ -497,10 +582,10 @@ class _CategoryChip extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? color : Colors.white,
+            color: selected ? color : AppTheme.card,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: selected ? color : const Color(0xFFEEE2D8),
+              color: selected ? color : AppTheme.border,
             ),
           ),
           child: Text(
@@ -534,7 +619,7 @@ class _ItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -543,25 +628,33 @@ class _ItemCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
+                // タップ領域は 44x44 を確保しつつ、見た目の丸は 30px のまま。
                 GestureDetector(
                   onTap: onToggle,
                   behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: item.completed ? category.color : Colors.white,
-                      border: Border.all(color: category.color, width: 2),
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              item.completed ? category.color : AppTheme.card,
+                          border: Border.all(color: category.color, width: 2),
+                        ),
+                        child: item.completed
+                            ? const Icon(Icons.check,
+                                color: Colors.white, size: 18)
+                            : null,
+                      ),
                     ),
-                    child: item.completed
-                        ? const Icon(Icons.check,
-                            color: Colors.white, size: 18)
-                        : null,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,6 +677,11 @@ class _ItemCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
+                          if (!item.completed && item.pinned) ...[
+                            Icon(Icons.push_pin,
+                                size: 14, color: AppTheme.primary),
+                            const SizedBox(width: 4),
+                          ],
                           _Badge(
                             text: '${category.emoji} ${category.label}',
                             color: category.color,
@@ -647,34 +745,179 @@ class _Badge extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.hasAny});
+  const _EmptyState({
+    required this.hasAny,
+    required this.searching,
+    required this.onPickExample,
+  });
+
   final bool hasAny;
+  final bool searching;
+  final ValueChanged<String> onPickExample;
 
   @override
   Widget build(BuildContext context) {
+    // まだ1件もなく、検索中でもないときは「ワンタップ候補」で初速を出す。
+    final showStarters = !hasAny && !searching;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🪣', style: TextStyle(fontSize: 64)),
+            Text(searching ? '🔍' : '🪣', style: const TextStyle(fontSize: 64)),
             const SizedBox(height: 16),
             Text(
-              hasAny ? '条件に合う項目がありません' : 'まだ何もありません',
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold),
+              hasAny
+                  ? (searching ? '見つかりませんでした' : '条件に合う項目がありません')
+                  : 'まだ何もありません',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               hasAny
-                  ? 'フィルターを変えてみましょう'
-                  : '右下の「追加」から、\nやりたいことを書き出そう！',
+                  ? (searching ? 'キーワードを変えてみましょう' : 'フィルターを変えてみましょう')
+                  : 'まずは気になるものをタップ、\nまたは右下の「追加」から書き出そう！',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppTheme.ink.withValues(alpha: 0.6)),
             ),
+            if (showStarters) ...[
+              const SizedBox(height: 20),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final example in shuffledExamples().take(6))
+                    GestureDetector(
+                      onTap: () => onPickExample(example),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.card,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: Text(
+                          '＋ $example',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.ink,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 検索入力欄。
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: TextField(
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'やりたいことを検索',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: value.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => onChanged(''),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// 無料枠の残りが少なくなったときに出す、控えめなプレミアム案内。
+class _UpgradeHint extends StatelessWidget {
+  const _UpgradeHint({required this.remaining, required this.onTap});
+
+  final int remaining;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final atLimit = remaining <= 0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Material(
+        color: AppTheme.premiumTint,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const Text('✨', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    atLimit
+                        ? '無料枠がいっぱいです。プレミアムで100個まで解放しよう'
+                        : '無料で追加できるのはあと$remaining個。100個まで解放できます',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.ink,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: AppTheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// スワイプ削除時に背面に表示する赤い「削除」ボード。
+class _DeleteBackground extends StatelessWidget {
+  const _DeleteBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      alignment: Alignment.centerRight,
+      decoration: BoxDecoration(
+        color: Colors.redAccent,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.delete, color: Colors.white),
+          SizedBox(width: 6),
+          Text('削除',
+              style: TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

@@ -9,7 +9,6 @@ import '../theme/app_theme.dart';
 import '../widgets/celebration.dart';
 import 'edit_screen.dart';
 import 'share_preview_screen.dart';
-import 'upgrade_screen.dart';
 
 class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.itemId});
@@ -24,15 +23,8 @@ class DetailScreen extends StatelessWidget {
     }
   }
 
-  /// 達成カードのシェア画像を書き出す（プレミアム限定）。
-  /// 非会員はプレミアム案内へ誘導する。
+  /// 達成カードのシェア画像を作る（無料で利用可）。
   Future<void> _share(BuildContext context, BucketItem item) async {
-    if (!premiumRepository.isPremium) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const UpgradeScreen()),
-      );
-      return;
-    }
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SharePreviewScreen(
@@ -43,14 +35,32 @@ class DetailScreen extends StatelessWidget {
     );
   }
 
+  /// 達成日を手動で編集する（後追いで記録できるように）。
+  Future<void> _editCompletedDate(BuildContext context, BucketItem item) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: item.completedDate ?? now,
+      firstDate: DateTime(2000),
+      lastDate: now,
+      helpText: '達成日を選ぶ',
+    );
+    if (picked != null) {
+      await bucketRepository.setCompletedDate(item.id, picked);
+    }
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
+    // 画面を閉じても通知を出せるよう、アプリ全体のメッセンジャーを先に取得。
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('削除しますか？'),
-        content: const Text('この項目を削除します。元に戻せません。'),
+        content: const Text('この項目を削除します。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -63,10 +73,31 @@ class DetailScreen extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true) {
-      await bucketRepository.delete(itemId);
-      if (context.mounted) Navigator.of(context).pop();
-    }
+    if (ok != true) return;
+
+    final removed = await bucketRepository.delete(itemId);
+    navigator.pop();
+    if (removed == null) return;
+
+    var undone = false;
+    messenger
+        .showSnackBar(
+          SnackBar(
+            content: const Text('削除しました'),
+            action: SnackBarAction(
+              label: '元に戻す',
+              onPressed: () {
+                undone = true;
+                bucketRepository.restore(removed);
+              },
+            ),
+          ),
+        )
+        .closed
+        .then((_) {
+      // 取り消されなければ、ここで初めて添付写真を実際に消す。
+      if (!undone) bucketRepository.purgePhoto(removed);
+    });
   }
 
   @override
@@ -83,6 +114,15 @@ class DetailScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             actions: [
+              if (!item.completed)
+                IconButton(
+                  icon: Icon(item.pinned
+                      ? Icons.push_pin
+                      : Icons.push_pin_outlined),
+                  tooltip: item.pinned ? 'ピンを外す' : '次に叶えたい（ピン留め）',
+                  color: item.pinned ? AppTheme.primary : null,
+                  onPressed: () => bucketRepository.togglePinned(item.id),
+                ),
               if (item.completed)
                 IconButton(
                   icon: const Icon(Icons.ios_share),
@@ -105,22 +145,45 @@ class DetailScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: category.color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('${category.emoji} ${category.label}',
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('${category.emoji} ${category.label}',
                           style: TextStyle(
                               color: category.color,
                               fontWeight: FontWeight.bold)),
+                    ),
+                    if (!item.completed && item.pinned) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.push_pin,
+                                size: 14, color: AppTheme.primary),
+                            const SizedBox(width: 4),
+                            Text('次に叶えたい',
+                                style: TextStyle(
+                                    color: AppTheme.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -155,7 +218,7 @@ class DetailScreen extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.card,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -182,25 +245,35 @@ class DetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                 ],
-                if (item.completed && item.completedDate != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('🎉', style: TextStyle(fontSize: 22)),
-                        const SizedBox(width: 10),
-                        Text(
-                          '達成日：${DateFormat('yyyy年M月d日').format(item.completedDate!)}',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: category.color),
-                        ),
-                      ],
+                if (item.completed)
+                  InkWell(
+                    onTap: () => _editCompletedDate(context, item),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('🎉', style: TextStyle(fontSize: 22)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item.completedDate != null
+                                  ? '達成日：${DateFormat('yyyy年M月d日').format(item.completedDate!)}'
+                                  : '達成日を記録する',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: category.color),
+                            ),
+                          ),
+                          Icon(Icons.edit_calendar,
+                              size: 18, color: category.color),
+                        ],
+                      ),
                     ),
                   ),
                 const SizedBox(height: 28),

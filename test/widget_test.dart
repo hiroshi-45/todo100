@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zom100/models/app_settings.dart';
 import 'package:zom100/models/bucket_item.dart';
 import 'package:zom100/models/profile.dart';
 import 'package:zom100/utils/stats.dart';
@@ -31,6 +32,26 @@ void main() {
       expect(restored.completedDate, item.completedDate);
       expect(restored.photoPath, item.photoPath);
       expect(restored.createdAt, item.createdAt);
+    });
+
+    test('ピン留めが toJson/fromJson で往復できる', () {
+      final item = BucketItem(
+        id: 'p',
+        title: 'ピン留めしたい',
+        createdAt: DateTime(2026, 1, 1),
+        pinned: true,
+      );
+      final restored = BucketItem.fromJson(item.toJson());
+      expect(restored.pinned, isTrue);
+    });
+
+    test('ピン留めは既定で false（旧データ互換）', () {
+      final restored = BucketItem.fromJson({
+        'id': 'x',
+        'title': 't',
+        'createdAt': DateTime(2026, 1, 1).toIso8601String(),
+      });
+      expect(restored.pinned, isFalse);
     });
 
     test('不明なカテゴリIDは「その他」にフォールバックする', () {
@@ -192,6 +213,36 @@ void main() {
       final cleared = p.copyWith(clearAvatar: true);
       expect(cleared.avatarPath, isNull);
       expect(cleared.name, 'x');
+    });
+  });
+
+  group('AppSettings', () {
+    test('既定値は通知OFF・20:00・オンボーディング未表示', () {
+      final s = AppSettings();
+      expect(s.onboardingSeen, isFalse);
+      expect(s.remindersEnabled, isFalse);
+      expect(s.reminderHour, 20);
+      expect(s.reminderMinute, 0);
+    });
+
+    test('toJson/fromJson でデータが往復できる', () {
+      final s = AppSettings(
+        onboardingSeen: true,
+        remindersEnabled: true,
+        reminderHour: 8,
+        reminderMinute: 30,
+      );
+      final restored = AppSettings.fromJson(s.toJson());
+      expect(restored.onboardingSeen, isTrue);
+      expect(restored.remindersEnabled, isTrue);
+      expect(restored.reminderHour, 8);
+      expect(restored.reminderMinute, 30);
+    });
+
+    test('空のJSONからでも安全に既定値を生成できる', () {
+      final s = AppSettings.fromJson({});
+      expect(s.onboardingSeen, isFalse);
+      expect(s.reminderHour, 20);
     });
   });
 }

@@ -242,7 +242,7 @@ class _TimelineSectionView extends StatelessWidget {
               Expanded(
                 child: Container(
                   height: 1,
-                  color: const Color(0xFFEEE2D8),
+                  color: AppTheme.border,
                 ),
               ),
               const SizedBox(width: 8),
@@ -279,7 +279,7 @@ class _TimelineCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),

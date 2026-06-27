@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../main.dart';
 import '../models/bucket_item.dart';
+import '../screens/settings_screen.dart';
 import '../screens/theme_screen.dart';
 import '../screens/upgrade_screen.dart';
 import '../theme/app_theme.dart';
@@ -137,6 +138,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
               _statsRow(done: done, remaining: 100 - done, percent: percent),
               _premiumTile(context, total),
               _themeTile(context),
+              _settingsTile(context),
               const Divider(height: 32, indent: 20, endIndent: 20),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -314,7 +316,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
   Widget _statDivider() => Container(
         width: 1,
         height: 28,
-        color: const Color(0xFFEEE2D8),
+        color: AppTheme.border,
       );
 
   /// テーマ選択への導線。現在のテーマ名を表示。
@@ -323,7 +325,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Material(
-        color: Colors.white,
+        color: AppTheme.card,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -367,6 +369,55 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     );
   }
 
+  /// 設定（リマインダー・バックアップ）への導線。
+  Widget _settingsTile(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Material(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.of(context).pop(); // ドロワーを閉じる
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const Text('⚙️', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '設定',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: AppTheme.ink,
+                    ),
+                  ),
+                ),
+                Text(
+                  'リマインダー・バックアップ',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.ink.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, color: AppTheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// デバッグ専用：プレミアムをテスト解放/解除する。
   Future<void> _debugTogglePremium(BuildContext context) async {
     final next = !premiumRepository.isPremium;
@@ -391,7 +442,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Material(
-        color: isPremium ? const Color(0xFFFFF4E6) : Colors.white,
+        color: isPremium ? AppTheme.premiumTint : AppTheme.card,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -470,7 +521,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                 child: LinearProgressIndicator(
                   value: ratio,
                   minHeight: 8,
-                  backgroundColor: const Color(0xFFF1E7DD),
+                  backgroundColor: AppTheme.subtle,
                   valueColor: AlwaysStoppedAnimation(c.color),
                 ),
               ),
