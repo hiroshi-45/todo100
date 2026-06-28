@@ -87,6 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
     bucketRepository.delete(item.id).then((removed) {
       if (removed == null) return;
       var undone = false;
+      // 連続削除でバナーがキューに溜まり出っぱなしに見えるのを防ぐため、
+      // 既存（表示中・待機中）の SnackBar をクリアしてから最新の1件を出す。
+      messenger.clearSnackBars();
       messenger
           .showSnackBar(
             SnackBar(

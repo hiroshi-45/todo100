@@ -80,6 +80,8 @@ class DetailScreen extends StatelessWidget {
     if (removed == null) return;
 
     var undone = false;
+    // 既存（表示中・待機中）の SnackBar をクリアしてから最新の1件を出す。
+    messenger.clearSnackBars();
     messenger
         .showSnackBar(
           SnackBar(
