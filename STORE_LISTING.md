@@ -69,7 +69,7 @@
 
 **プライバシーポリシーURL**
 ```
-https://hiroshi-45.github.io/todo100/privacy.html
+https://hiroshi-45.github.io/todo100/docs/privacy.html
 ```
 
 ---
@@ -117,7 +117,7 @@ https://hiroshi-45.github.io/todo100/privacy.html
 
 **プライバシーポリシーURL**
 ```
-https://hiroshi-45.github.io/todo100/privacy.html
+https://hiroshi-45.github.io/todo100/docs/privacy.html
 ```
 
 ---
